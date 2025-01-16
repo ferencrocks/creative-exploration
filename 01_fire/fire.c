@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <conio.h>
+#include <dos.h>
 
 typedef unsigned char byte;
 typedef unsigned short int word;
@@ -58,6 +59,26 @@ byte heatbuf[SCREEN_WIDTH * (SCREEN_HEIGHT + 1)]; // +1 for the random row
 int rand_minmax(int min, int max) {
     return rand() % (max - min) + min;
 }
+
+// Sleep hs (1/100 seconds)
+void sleep_hs(byte hs) {
+    struct dostime_t time;
+    int last_hs = 0, hs_passed = 0;
+
+    _dos_gettime(&time);
+    last_hs = time.hsecond;
+    // t.hsecond contains the current second's hundredth of a second. It goes from 0 to 99 then starts again from 0.
+    do {
+        _dos_gettime(&time);
+        if (time.hsecond < last_hs) {  
+            hs_passed += 100 - last_hs + time.hsecond;
+        } else {
+            hs_passed += time.hsecond - last_hs;
+        }
+        last_hs = time.hsecond;
+    } while (hs_passed < hs);
+}
+
 
 // ignite the fire by setting the heat value of the last row to random values
 void ignite() {
@@ -193,6 +214,8 @@ int main()
         ignite();
         spread();
         draw();
+
+        sleep_hs(10);
     } while (!kbhit());
 
     getch(); // clear the keyboard buffer
